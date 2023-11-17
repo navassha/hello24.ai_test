@@ -1,15 +1,31 @@
 import 'dart:developer';
+import 'dart:js_util';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello24_ai/extensions/responsive_size.dart';
+import 'package:hello24_ai/provider/setting.dart';
 import 'package:hello24_ai/widgets/dropdown.dart';
 import 'package:hello24_ai/widgets/styled_text.dart';
+
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
 
 Container settingsOpen(BuildContext context, WidgetRef ref) {
   final fontsize = ref.watch(fontSizeProvider);
   final fontfamily = ref.watch(fontfamilyProvider);
   final listname = TextEditingController();
-  final List<String> list = [];
+  final List<String> list = ref.watch(listProvider);
   return Container(
     width: context.width(800),
     height: context.width(500),
@@ -27,9 +43,24 @@ Container settingsOpen(BuildContext context, WidgetRef ref) {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 10),
-              child: StyledText(text: "Settings", size: 15),
+            Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: Row(
+                children: [
+                  const StyledText(text: "Settings", size: 15),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () {
+                      ref.read(settingpagechangeProvider.notifier).state =
+                          false;
+                    },
+                    icon: Icon(
+                      Icons.close,
+                      size: context.width(14),
+                    ),
+                  )
+                ],
+              ),
             ),
             SizedBox(
               height: context.width(5),
@@ -367,9 +398,11 @@ Container settingsOpen(BuildContext context, WidgetRef ref) {
                       height: context.width(5),
                     ),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             const StyledText(
                               text: "Signature:",
@@ -390,7 +423,7 @@ Container settingsOpen(BuildContext context, WidgetRef ref) {
                         SizedBox(
                           width: context.width(10),
                         ),
-                        list.isEmpty
+                        ref.watch(listProvider).isEmpty
                             ? Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -405,47 +438,96 @@ Container settingsOpen(BuildContext context, WidgetRef ref) {
                                   GestureDetector(
                                     onTap: () {
                                       _alertDailogForSignatureCreate(
-                                          context, listname, list);
+                                          context, listname, ref);
                                     },
-                                    child: Container(
-                                      width: context.width(130),
-                                      height: context.width(25),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        border: Border.all(color: Colors.grey),
-                                        borderRadius: BorderRadius.circular(
-                                          context.width(5),
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.add,
-                                              color: Colors.blue,
-                                              size: context.width(13),
-                                            ),
-                                            const StyledText(
-                                              text: "Create New",
-                                              size: 10,
-                                              color: Colors.blue,
-                                            )
-                                          ],
-                                        ),
-                                      ),
-                                    ),
+                                    child: createSignature(context),
                                   )
                                 ],
                               )
-                            : Container(
-                                width: context.width(300),
-                                height: context.width(59),
-                                color: Colors.amber,
-                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: context.width(400),
+                                    height: context.width(150),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: context.width(150),
+                                          height: context.width(400),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            border: Border.all(
+                                                width: 1, color: Colors.grey),
+                                            borderRadius: BorderRadius.circular(
+                                              context.width(10),
+                                            ),
+                                          ),
+                                          child: Padding(
+                                            padding: EdgeInsets.only(
+                                                top: context.width(10)),
+                                            child: ListView.builder(
+                                              itemCount: ref
+                                                  .watch(listProvider)
+                                                  .length,
+                                              itemBuilder: (context, index) =>
+                                                  Container(
+                                                width: context.width(150),
+                                                height: context.width(30),
+                                                color: Colors.blue[100],
+                                                child: Padding(
+                                                  padding: EdgeInsets.only(
+                                                      left: context.width(10),
+                                                      right: context.width(5)),
+                                                  child: Row(
+                                                    children: [
+                                                      StyledText(
+                                                        text: ref.watch(
+                                                                listProvider)[
+                                                            index],
+                                                        size: 12,
+                                                        color: Colors.black,
+                                                      ),
+                                                      const Spacer(),
+                                                      const Icon(Icons.edit),
+                                                      SizedBox(
+                                                        width: context.width(5),
+                                                      ),
+                                                      IconButton(
+                                                        onPressed: () => ref
+                                                            .read(listProvider
+                                                                .notifier)
+                                                            .state
+                                                            .removeAt(index),
+                                                        icon: const Icon(
+                                                            Icons.delete),
+                                                      )
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: context.width(10),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => _alertDailogForSignatureCreate(
+                                        context, listname, ref),
+                                    child: createSignature(context),
+                                  )
+                                ],
+                              ),
+                        SizedBox(
+                          height: context.width(5),
+                        ),
+                        const Divider(
+                          color: Color.fromARGB(255, 104, 104, 104),
+                        ),
                       ],
                     )
                   ],
@@ -459,8 +541,40 @@ Container settingsOpen(BuildContext context, WidgetRef ref) {
   );
 }
 
+Container createSignature(BuildContext context) {
+  return Container(
+    width: context.width(130),
+    height: context.width(25),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: Border.all(color: Colors.grey),
+      borderRadius: BorderRadius.circular(
+        context.width(5),
+      ),
+    ),
+    child: Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.add,
+            color: Colors.blue,
+            size: context.width(13),
+          ),
+          const StyledText(
+            text: "Create New",
+            size: 10,
+            color: Colors.blue,
+          )
+        ],
+      ),
+    ),
+  );
+}
+
 Future<dynamic> _alertDailogForSignatureCreate(
-    BuildContext context, TextEditingController listname, List<String> list) {
+    BuildContext context, TextEditingController listname, WidgetRef ref) {
   return showDialog(
     barrierDismissible: false,
     context: context,
@@ -525,11 +639,11 @@ Future<dynamic> _alertDailogForSignatureCreate(
                   ),
                   GestureDetector(
                     onTap: () {
-                      list.add(listname.text);
+                      ref.read(listProvider.notifier).state.add(listname.text);
                       listname.clear();
                       Navigator.pop(context);
 
-                      log(list.toString());
+                      log(ref.watch(listProvider).toString());
                     },
                     child: Container(
                       width: context.width(100),
@@ -565,4 +679,8 @@ final fontSizeProvider = StateProvider<int>((ref) {
 
 final fontfamilyProvider = StateProvider<String>((ref) {
   return "Normal";
+});
+
+final listProvider = StateProvider<List<String>>((ref) {
+  return [];
 });
